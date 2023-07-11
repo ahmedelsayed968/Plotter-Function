@@ -1,17 +1,26 @@
 from Parser import Parser
 import matplotlib.pyplot as plt
+import numpy as np
 class Plotter:
     def __init__(self,function,min_x,max_x):
         self.input_function = function
         self.min_x = min_x
         self.max_x = max_x
     def plot_function(self)->tuple:
+        if self.min_x > self.max_x:
+            raise Exception('x-min should be less than x-max')
+        
         tree = Parser(self.input_function).get_function()
         y_values = []
-        x_values = list(range(self.min_x,self.max_x+1))
+        x_values = np.linspace(self.min_x,self.max_x)
         for x in x_values:
-            y = eval(tree)
-            y_values.append(y)
+            try:
+                y = eval(tree)
+                y_values.append(y)
+            except Exception as e:
+                raise e
+
+                    
         
         # plt.plot(x_values,y_values,'-o')
         # plt.xlabel('x')

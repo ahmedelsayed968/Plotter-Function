@@ -83,7 +83,8 @@ class Window(QMainWindow):
         widget.setLayout(layout)
         
         # Set the central widget of the main window
-        # self.setCentralWidget(widget)    
+        self.setCentralWidget(widget)
+            
         
 def main():
     app = QApplication.instance()

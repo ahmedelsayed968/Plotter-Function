@@ -1,4 +1,6 @@
-
+class InvalidInput(Exception):
+    pass
+    
 class Parser:
             
     def __init__(self,function:str)->None:
@@ -7,7 +9,7 @@ class Parser:
     def get_function(self):
         valid = self._check_function()
         if not valid:
-            raise Exception('invalid Input')
+            raise InvalidInput('invalid Input')
         else:
             # parser it as tree
             tree = compile(self.input_function.replace('^','**'),filename='./',mode='eval')
