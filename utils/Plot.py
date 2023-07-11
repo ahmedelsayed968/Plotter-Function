@@ -5,7 +5,7 @@ class Plotter:
         self.input_function = function
         self.min_x = min_x
         self.max_x = max_x
-    def plot_function(self):
+    def plot_function(self)->tuple:
         tree = Parser(self.input_function).get_function()
         y_values = []
         x_values = list(range(self.min_x,self.max_x+1))
@@ -13,14 +13,16 @@ class Plotter:
             y = eval(tree)
             y_values.append(y)
         
-        plt.plot(x_values,y_values,'-o')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title(f'Graph of {self.input_function}')
-        plt.show()
+        # plt.plot(x_values,y_values,'-o')
+        # plt.xlabel('x')
+        # plt.ylabel('y')
+        # plt.title(f'Graph of {self.input_function}')
+        # plt.show()
+        return x_values,y_values
 
 if __name__ == '__main__':
-    P = Plotter('5+x^4+5*3*x',0,6)
-    P.plot_function()        
+    # P = Plotter('5+x^4+5*3*x',0,6)
+    # P.plot_function() 
+    pass       
             
         
