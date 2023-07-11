@@ -1,22 +1,17 @@
 
 class Parser:
-    class Variable:
-        def __init__(self,coff:int,power:int)->None:
-            self.coff = coff
-            self.power = power
-        def get_value(self,x:int)->int:
-            return  self.coff * x **self.power 
-
+            
     def __init__(self,function:str)->None:
         self.input_function = function
          
-    def get_function(self)->list:
+    def get_function(self):
         valid = self._check_function()
         if not valid:
             raise Exception('invalid Input')
         else:
-            print('valid!')
-            
+            # parser it as tree
+            tree = compile(self.input_function.replace('^','**'),filename='./',mode='eval')
+            return tree
             
             
         
@@ -43,9 +38,5 @@ class Parser:
     
     def _is_sign(self,char)->bool:
         return char=='+' or char=='-' or char =='/' or char=='*' or char == '^'
-        
-        
-        
 if __name__ == '__main__':
-    p = Parser('5+x*3-x^x^3^3*2/2-1')
-    func = p.get_function()
+    pass
