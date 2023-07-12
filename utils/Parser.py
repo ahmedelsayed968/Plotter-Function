@@ -1,44 +1,34 @@
 class InvalidInput(Exception):
     pass
-    
+class InvalidFunction(Exception):
+    pass    
+import math
 class Parser:
-            
     def __init__(self,function:str)->None:
         self.input_function = function
          
     def get_function(self):
-        valid = self._check_function()
-        if not valid:
-            raise InvalidInput('invalid Input')
-        else:
-            # parser it as tree
-            tree = compile(self.input_function.replace('^','**'),filename='./',mode='eval')
-            return tree
-            
+        self.handle_input_function()
+        try:
+            tree = compile(f'{self.input_function}',filename='./',mode='eval')
+        except :
+            raise InvalidFunction('Invalid Input Function')
+        return tree    
             
         
-    
-    def _check_function(self)->bool:
-        st = []
-        for char in self.input_function:
-            if len(st) == 0:
-                st.append(char)
-                continue
-            
-            if self._is_sign(st[-1]) and self._is_sign(char):
-                return False
-            if char == 'x' and not self._is_sign(st[-1]):
-                return False
-            if char.isdigit() and st[-1] == 'x':
-                return False
-            if char == 'x' and st[-1] == 'x':
-                return False
-            st.append(char)
-        if self._is_sign(st[-1]):
-            return False    
-        return True        
-    
+    def handle_input_function(self):
+        self.input_function = self.input_function.lower().\
+                                                replace('sin','math.sin').\
+                                                replace('cos','math.cos').\
+                                                replace('tan','math.tan').\
+                                                replace('e','math.e').\
+                                                replace('^','**')  
+        
+        
     def _is_sign(self,char)->bool:
         return char=='+' or char=='-' or char =='/' or char=='*' or char == '^'
 if __name__ == '__main__':
-    pass
+    tree = Parser('sin(x)').get_function()
+    print(tree)
+    x = 2
+    print(eval(tree))

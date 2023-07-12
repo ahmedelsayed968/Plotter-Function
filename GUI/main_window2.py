@@ -9,6 +9,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from PySide2.QtGui import QIcon
+import math
+# from PySide2.QtWidgets.QMessageBox import Icon
 class EmptyField(Exception):
         pass
 
@@ -17,9 +19,67 @@ class Ui_MainWindow(object):
                 MainWindow.setObjectName("Function Plotter")
                 MainWindow.resize(879, 727)
                 self.centralwidget = QtWidgets.QWidget(MainWindow)
+                # self.setStyleSheet('background-color: yellow;')
                 self.centralwidget.setObjectName("centralwidget")
                 self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
                 MainWindow.setWindowIcon(QIcon('GUI\img\line-chart.png'))
+                
+                self.configure_layout()
+                self.add_validator()
+                self.configure_plot()
+                self.retranslateUi(MainWindow)
+                QtCore.QMetaObject.connectSlotsByName(MainWindow)
+                
+                
+        def add_validator(self):
+                validator_x_values = QRegExpValidator(QRegExp(r'^-?\d+$|^-?\d+(\.\d+)?$'))
+                validator_function_input = QRegExpValidator(QRegExp(r'^[0-9|x|^\/*+\-|sin|cos|tan|e|()]+$'))
+                self.lineEdit_2.setValidator(validator_x_values)
+                self.lineEdit_3.setValidator(validator_x_values)
+                self.lineEdit.setValidator(validator_function_input)
+                
+        def plot(self):
+                self.figure.clear()
+                x_min = self.lineEdit_2.text()
+                x_max = self.lineEdit_3.text()
+                try:    
+                        self.validate_fields(x_min,x_max)
+                        p = Plotter(self.lineEdit.text(),float(x_min),float(x_max))
+                        x_values , y_values = p.plot_function() 
+                        # plt.ylim(min(y_values), max(y_values))        
+                        plt.plot(x_values,y_values)
+                        plt.xlabel('x-value')
+                        plt.ylabel('y-value')
+                        plt.title(f'f(x):= {self.lineEdit.text()}')
+                        self.convas.draw()
+                except Exception as e:
+                        msg = QMessageBox()
+                        msg.setWindowTitle('Error')
+                        msg.setText(f'{e}')
+                        msg.setIcon(QMessageBox.Warning)
+                        msg.exec_()        
+                        
+        def validate_fields(self,x_min,x_max):
+                if self.lineEdit.text() == '':
+                        raise EmptyField('Please Enter the Function')
+                if x_min == '':
+                        raise EmptyField('Please Enter value of x-min') 
+                
+                if x_max == '':
+                        raise EmptyField('Please Enter value of x-max') 
+                
+                                        
+                                
+        def retranslateUi(self, MainWindow):
+                _translate = QtCore.QCoreApplication.translate
+                MainWindow.setWindowTitle(_translate("MainWindow", "Function Plotter"))
+                self.label.setText(_translate("MainWindow", "Input Function "))
+                self.label_2.setText(_translate("MainWindow", "x-min"))
+                self.label_3.setText(_translate("MainWindow", "x-max"))
+                self.pushButton.setText(_translate("MainWindow", "Plot"))
+                self.label_4.setText(_translate("MainWindow", "Graph"))
+                
+        def configure_layout(self):
                 self.horizontalLayout.setObjectName("horizontalLayout")
                 self.frame_2 = QtWidgets.QFrame(self.centralwidget)
                 self.frame_2.setEnabled(True)
@@ -58,7 +118,6 @@ class Ui_MainWindow(object):
                 self.lineEdit = QtWidgets.QLineEdit(self.frame_2)
                 self.lineEdit.setMinimumSize(QtCore.QSize(0, 37))
                 self.lineEdit.setObjectName("lineEdit")
-                self.lineEdit.setValidator(QRegExpValidator(QRegExp(r'^[0-9|x|^\/*+\-]+$')))
                 self.verticalLayout_2.addWidget(self.lineEdit)
                 self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
                 self.horizontalLayout_3.setObjectName("horizontalLayout_3")
@@ -133,65 +192,15 @@ class Ui_MainWindow(object):
                 MainWindow.setMenuBar(self.menubar)
                 self.statusbar = QtWidgets.QStatusBar(MainWindow)
                 self.statusbar.setObjectName("statusbar")
-                MainWindow.setStatusBar(self.statusbar)
+                MainWindow.setStatusBar(self.statusbar)        
 
-                self.retranslateUi(MainWindow)
-                QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-                validator = QRegExpValidator(QRegExp(r'^-?\d+$|^-?\d+(\.\d+)?$'))
-                self.lineEdit_2.setValidator(validator)
-                self.lineEdit_3.setValidator(validator)
-                
+        def configure_plot(self):
                 self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.frame_3)
                 self.horizontalLayout_4.setObjectName('horizontalLayout_4')
-                
                 self.figure = plt.figure()
                 self.convas = FigureCanvas(self.figure)
-                
                 self.horizontalLayout_4.addWidget(self.convas)
                 
-
-        def plot(self):
-                self.figure.clear()
-                x_min = self.lineEdit_2.text()
-                x_max = self.lineEdit_3.text()
-                try:    
-                        self.validate_fields(x_min,x_max)
-                        p = Plotter(self.lineEdit.text(),float(x_min),float(x_max))
-                        x_values , y_values = p.plot_function()
-                        plt.ylim(min(y_values), max(y_values))        
-                        plt.plot(x_values,y_values)
-                        plt.xlabel('x-value')
-                        plt.ylabel('y-value')
-                        plt.title(f'Plotted Graph of {self.lineEdit.text()}')
-                        self.convas.draw()
-                except Exception as e:
-                        msg = QMessageBox()
-                        msg.setWindowTitle('Error')
-                        msg.setText(f'{e}')
-                        msg.exec_()        
-                        
-        def validate_fields(self,x_min,x_max):
-                if self.lineEdit.text() == '':
-                        raise EmptyField('Please Enter the Function')
-                if x_min == '':
-                        raise EmptyField('Please Enter value of x-min') 
-                
-                if x_max == '':
-                        raise EmptyField('Please Enter value of x-max') 
-                
-                                        
-                                
-        def retranslateUi(self, MainWindow):
-                _translate = QtCore.QCoreApplication.translate
-                MainWindow.setWindowTitle(_translate("MainWindow", "Function Plotter"))
-                self.label.setText(_translate("MainWindow", "Input Function "))
-                self.label_2.setText(_translate("MainWindow", "x-min"))
-                self.label_3.setText(_translate("MainWindow", "x-max"))
-                self.pushButton.setText(_translate("MainWindow", "Plot"))
-                self.label_4.setText(_translate("MainWindow", "Graph"))
-
-
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
