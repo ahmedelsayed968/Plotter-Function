@@ -8,14 +8,20 @@ from Plot import Plotter
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-from PySide2.QtGui import QIcon
+from PySide2.QtGui import QIcon,QFont
+from PyQt5.QtWidgets import QFileDialog
 import math
+
+class EmptyFigure(Exception):
+        pass
 # from PySide2.QtWidgets.QMessageBox import Icon
 class EmptyField(Exception):
         pass
 
 class Ui_MainWindow(object):
         def setupUi(self, MainWindow):
+                self.ax = None
+                self.counter = 0
                 MainWindow.setObjectName("Function Plotter")
                 MainWindow.resize(879, 727)
                 self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -46,18 +52,19 @@ class Ui_MainWindow(object):
                         self.validate_fields(x_min,x_max)
                         p = Plotter(self.lineEdit.text(),float(x_min),float(x_max))
                         x_values , y_values = p.plot_function() 
-                        # plt.ylim(min(y_values), max(y_values))        
-                        plt.plot(x_values,y_values)
-                        plt.xlabel('x-value')
-                        plt.ylabel('y-value')
-                        plt.title(f'f(x):= {self.lineEdit.text()}')
+                        # plt.ylim(min(y_values), max(y_values))
+                        self.ax = self.figure.add_subplot(111)        
+                        self.ax.plot(x_values,y_values)
+                        self.ax.set_xlabel('x-value')
+                        self.ax.set_ylabel('y-value')
+                        self.ax.set_title(f'f(x):= {self.lineEdit.text()}')
                         self.convas.draw()
                 except Exception as e:
-                        msg = QMessageBox()
-                        msg.setWindowTitle('Error')
-                        msg.setText(f'{e}')
-                        msg.setIcon(QMessageBox.Warning)
-                        msg.exec_()        
+                        self.msg = QMessageBox()
+                        self.msg.setText(f'{e}')
+                        self.msg.setIcon(QMessageBox.Warning)
+                        self.msg.exec_()
+                        self.msg = None        
                         
         def validate_fields(self,x_min,x_max):
                 if self.lineEdit.text() == '':
@@ -78,6 +85,7 @@ class Ui_MainWindow(object):
                 self.label_3.setText(_translate("MainWindow", "x-max"))
                 self.pushButton.setText(_translate("MainWindow", "Plot"))
                 self.label_4.setText(_translate("MainWindow", "Graph"))
+        
                 
         def configure_layout(self):
                 self.horizontalLayout.setObjectName("horizontalLayout")
@@ -192,8 +200,40 @@ class Ui_MainWindow(object):
                 MainWindow.setMenuBar(self.menubar)
                 self.statusbar = QtWidgets.QStatusBar(MainWindow)
                 self.statusbar.setObjectName("statusbar")
-                MainWindow.setStatusBar(self.statusbar)        
+                MainWindow.setStatusBar(self.statusbar) 
+                self.configure_save_figure_button()
 
+        def configure_save_figure_button(self):
+                self.save_figure_button = QtWidgets.QPushButton(self.frame_2)
+                
+                sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+                sizePolicy.setHorizontalStretch(0)
+                sizePolicy.setVerticalStretch(0)
+                sizePolicy.setHeightForWidth(self.pushButton.sizePolicy().hasHeightForWidth())
+                self.save_figure_button.setSizePolicy(sizePolicy)
+                self.save_figure_button.setIconSize(QtCore.QSize(16, 16))
+                self.save_figure_button.setObjectName("Save Figure Button")
+                self.save_figure_button.setText('Save Figure')
+                self.save_figure_button.setFont(QFont(font='MS Shell Dlg 2',pointSize=20,))
+                self.verticalLayout_2.addWidget(self.save_figure_button)
+              
+                self.save_figure_button.clicked.connect(self.save_figure)
+                
+                
+        def save_figure(self):
+                try:
+                        if not self.ax or not self.ax.has_data:      
+                                raise EmptyFigure('No Exiting Figure to Save!')                           
+                        else:
+                                file_path, _ = QFileDialog.getSaveFileName(None, "Save Image", "", "PNG (*.png)")
+                                if file_path:
+                                        self.figure.savefig(file_path)
+                except EmptyFigure as e:
+                        self.msg2 = QMessageBox()
+                        self.msg2.setText(f'{e}')
+                        self.msg2.setIcon(QMessageBox.Warning)
+                        self.msg2.exec_()                
+                        
         def configure_plot(self):
                 self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.frame_3)
                 self.horizontalLayout_4.setObjectName('horizontalLayout_4')
@@ -202,7 +242,6 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_4.addWidget(self.convas)
                 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
