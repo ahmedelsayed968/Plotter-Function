@@ -56,6 +56,11 @@ class Parser:
                         self.__sign_is_bigger(st_operation[-1],value):
                     right = st_nodes.pop()
                     left = st_nodes.pop()
+                    if left.type == Type.FUNCTION and not left.left:
+                        raise ValueError(f'Invalid Expression {left.value}')
+                    if right.type == Type.FUNCTION and not right.left:
+                        raise ValueError(f'Invalid Expression {right.value}')
+                    
                     node_value = st_operation[-1]
                     type_ = Type.OPERATOR
                     calNode = self.__Node(left,node_value,right,type_)
@@ -107,9 +112,11 @@ class Parser:
         """
         if not self.Tree:
             raise Exception('Tree Not Found To Evaluate')
+        try:
+            return self.__helper_evaluate(self.Tree,kargs)
+        except Exception as E:
+            raise E
         
-        return self.__helper_evaluate(self.Tree,kargs)
-    
     def __helper_evaluate(self,root,kargs):        
         if not root:
             return 0
@@ -137,12 +144,12 @@ class Parser:
             elif root.value == '^':
                 return self.__helper_evaluate(root.left,kargs)** self.__helper_evaluate(root.right,kargs)
             elif root.value == '/':
-                try:
-                    return self.__helper_evaluate(root.left,kargs)/ self.__helper_evaluate(root.right,kargs)
-                except ZeroDivisionError:
-                    raise ZeroDivisionError('divide by zero')
-                except Exception as E:
-                    raise E
+                    right = self.__helper_evaluate(root.right,kargs)
+                    if right != 0.0:
+                        return self.__helper_evaluate(root.left,kargs)/ right
+                    else:
+                        raise ZeroDivisionError('divide by zero')
+
             else:
                 raise InvalidOperation('Operation Not Supported')                         
     
@@ -205,6 +212,6 @@ class Tokenizer:
     
 if __name__ == '__main__':
     p = Parser()
-    p.create_tree('1+1+tan(x)+cos(x)*e')
-    # print(p.evaluate(x=1))
+    p.create_tree('e^-x')
+    print(p.evaluate(x=10))
     pass
