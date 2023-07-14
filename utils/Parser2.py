@@ -1,7 +1,10 @@
 import re
 from enum import Enum
 import math
-
+class InvalidOperation(Exception):
+    pass
+class InvalidFunction(Exception):
+    pass
 class Type(Enum):
     NUMBER = 1
     CONSTANT = 2
@@ -15,10 +18,9 @@ class Parser:
     SIGN_LEVEL2 = ['/','*']
     SIGN_LEVEL3 = ['+','-']
     
-    def __init__(self,in_num_variables):
-        self.in_num_variables:int = in_num_variables
+    def __init__(self):
         self.found_variables:set = None
-        self.Tree:self.__Node            = None
+        self.Tree:self.__Node    = None
     
     
     class __Node:
@@ -36,10 +38,6 @@ class Parser:
         except Exception as e:
             raise e
         
-        self.found_variables = TK.variables
-        if self.in_num_variables != len(self.found_variables):
-            raise ValueError('number of variables is not valid')
-        
         st_nodes = []
         st_operation = []
         for token in tokens:
@@ -55,7 +53,7 @@ class Parser:
                         st_operation and \
                         value != '(' and\
                         st_operation[-1] != '(' and\
-                        self._sign_is_bigger(st_operation[-1],value):
+                        self.__sign_is_bigger(st_operation[-1],value):
                     right = st_nodes.pop()
                     left = st_nodes.pop()
                     node_value = st_operation[-1]
@@ -84,7 +82,7 @@ class Parser:
                 if len(st_nodes)>=2 and st_nodes[-2].type == Type.FUNCTION and not st_nodes[-2].left:
                     st_nodes[-2].left = st_nodes[-1]
                     st_nodes.pop()
-        while st_operation and st_nodes:
+        while st_operation and st_nodes and len(st_nodes) >=2:
             right = st_nodes.pop()
             left = st_nodes.pop()
             node_value = st_operation[-1]
@@ -92,8 +90,7 @@ class Parser:
             st_nodes.append(Parser.__Node(left,node_value,right,type_))
             st_operation.pop()
             
-        
-        if len(st_nodes) == 1:
+        if len(st_nodes) == 1 and not st_operation:
             self.Tree = st_nodes[-1]
         else:
             raise ValueError('Invalid Expression')
@@ -102,44 +99,53 @@ class Parser:
         """"
             :kargs: dict of the variables' values to evaluate 
         """
-        if (self.found_variables and len(kargs) != len(self.found_variables)) or not self.Tree:
-            return False
+        if not self.Tree:
+            raise Exception('Tree Not Found To Evaluate')
         
-        return self._helper_evaluate(self.Tree,kargs)
-            
-    def _helper_evaluate(self,root,kargs):        
+        return self.__helper_evaluate(self.Tree,kargs)
+    
+    def __helper_evaluate(self,root,kargs):        
         if not root:
             return 0
         if root.type == Type.OPERATOR:
-            if root.value == '+':
-                return self._helper_evaluate(root.left,kargs)+ self._helper_evaluate(root.right,kargs)
-            elif root.value == '-':
-                return self._helper_evaluate(root.left,kargs)- self._helper_evaluate(root.right,kargs)
-            elif root.value == '*':
-                return self._helper_evaluate(root.left,kargs)* self._helper_evaluate(root.right,kargs)
-            elif root.value == '^':
-                return self._helper_evaluate(root.left,kargs)** self._helper_evaluate(root.right,kargs)
-            elif root.value == '/':
-                return self._helper_evaluate(root.left,kargs)/ self._helper_evaluate(root.right,kargs)
+            return self.__handle_basic_operation(root,kargs)
         elif root.type == Type.CONSTANT:
             if root.value == 'e':
                 return math.e
         elif root.type == Type.NUMBER:
             return root.value
         elif root.type == Type.VARIABLE:
+            if root.value not in kargs.keys():
+                raise Exception(f'Do Not Have value for {root.value}')
             return kargs[root.value]
         elif root.type == Type.FUNCTION:
-            if root.value == 'sin':
-                return math.sin(self._helper_evaluate(root.left,kargs))
-            elif root.value == 'tan':
-                return math.tan(self._helper_evaluate(root.left,kargs))
-            elif root.value == 'cos':
-                return math.cos(self._helper_evaluate(root.left,kargs))            
+            return self.__handle_functions(root,kargs)
         
-                        
-
+    def __handle_basic_operation(self,root,kargs):
+            if root.value == '+':
+                return self.__helper_evaluate(root.left,kargs)+ self.__helper_evaluate(root.right,kargs)
+            elif root.value == '-':
+                return self.__helper_evaluate(root.left,kargs)- self.__helper_evaluate(root.right,kargs)
+            elif root.value == '*':
+                return self.__helper_evaluate(root.left,kargs)* self.__helper_evaluate(root.right,kargs)
+            elif root.value == '^':
+                return self.__helper_evaluate(root.left,kargs)** self.__helper_evaluate(root.right,kargs)
+            elif root.value == '/':
+                return self.__helper_evaluate(root.left,kargs)/ self.__helper_evaluate(root.right,kargs)
+            else:
+                raise InvalidOperation('Operation Not Supported')                         
     
-    def _sign_is_bigger(self,s1,s2):
+    def __handle_functions(self,root,kargs):
+            if root.value == 'sin':
+                return math.sin(self.__helper_evaluate(root.left,kargs))
+            elif root.value == 'tan':
+                return math.tan(self.__helper_evaluate(root.left,kargs))
+            elif root.value == 'cos':
+                return math.cos(self.__helper_evaluate(root.left,kargs))
+            else:
+                raise InvalidFunction('Function Not Supported')   
+
+    def __sign_is_bigger(self,s1,s2):
         if s2 == Parser.SIGN_LEVEL1 and s1 != Parser.SIGN_LEVEL1:
             return False
         if s1 == Parser.SIGN_LEVEL1:
@@ -152,13 +158,13 @@ class Parser:
     
 
 
-    
+
 class Tokenizer:
     token_patterns = [
         (r'\d+(\.\d*)?|\.\d+', Type.NUMBER),    # match decimal numbers
         (r'sin|cos|tan', Type.FUNCTION),        # match function names
         (r'e',Type.CONSTANT),
-        (r'[a-zA-Z]+', Type.VARIABLE),          # match variables
+        (r'x*', Type.VARIABLE),                 # match variables
         (r'[+\-*/^(),]',Type.OPERATOR)          # match operators and parentheses
         
     ]
@@ -174,24 +180,19 @@ class Tokenizer:
                 match = regex.match(expression)
                 if match:
                     token = match.group(0)
-                    tokens.append((token, token_type))
-                    if token_type== Type.VARIABLE and token not in self.variables:
-                        self.variables.add(token)
-                    expression = expression[match.end():].lstrip()
-                    break
+                    if not token:
+                        match = None
+                    else:
+                        tokens.append((token, token_type))
+                        if token_type== Type.VARIABLE and token not in self.variables:
+                            self.variables.add(token)
+                        expression = expression[match.end():].lstrip()
+                        break
             if not match:
                 raise ValueError(f'Invalid token in expression: {expression}')
         return tokens
     
 if __name__ == '__main__':
-    # Tk = Tokenizer()
-    # tokens = Tk.tokenize('3*x + sin(y) / (4 - z)+cos(x)+tan(x)*e^t')
-    # print(tokens)
-    # print(Tk.variables)
-    # print(Parser(4)._sign_is_bigger('*','+'))
-    # tree = Parser(4).create_tree('3*x + sin(y) / (4 - z)+cos(x)+tan(x)*e^t')
-    
-    tree = Parser(4)
-    tree.create_tree('3*x + sin(y) / (4 - z)+cos(x)+tan(x)*e^t')
-    print(tree.evaluate(x=1,y=0,z=1,t=0))
-    # print(Parser()._sign_is_bigger('^','/'))
+    p = Parser()
+    p.create_tree('11+5+11+10')
+    print(p.evaluate(x=1))
