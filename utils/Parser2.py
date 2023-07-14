@@ -85,6 +85,12 @@ class Parser:
         while st_operation and st_nodes and len(st_nodes) >=2:
             right = st_nodes.pop()
             left = st_nodes.pop()
+            
+            if left.type == Type.FUNCTION and not left.left:
+                        raise ValueError(f'Invalid Expression {left.value}')
+            if right.type == Type.FUNCTION and not right.left:
+                        raise ValueError(f'Invalid Expression {right.value}')
+                
             node_value = st_operation[-1]
             type_ = Type.OPERATOR
             st_nodes.append(Parser.__Node(left,node_value,right,type_))
@@ -131,7 +137,12 @@ class Parser:
             elif root.value == '^':
                 return self.__helper_evaluate(root.left,kargs)** self.__helper_evaluate(root.right,kargs)
             elif root.value == '/':
-                return self.__helper_evaluate(root.left,kargs)/ self.__helper_evaluate(root.right,kargs)
+                try:
+                    return self.__helper_evaluate(root.left,kargs)/ self.__helper_evaluate(root.right,kargs)
+                except ZeroDivisionError:
+                    raise ZeroDivisionError('divide by zero')
+                except Exception as E:
+                    raise E
             else:
                 raise InvalidOperation('Operation Not Supported')                         
     
@@ -194,5 +205,6 @@ class Tokenizer:
     
 if __name__ == '__main__':
     p = Parser()
-    p.create_tree('11+5+11+10')
-    print(p.evaluate(x=1))
+    p.create_tree('1+1+tan(x)+cos(x)*e')
+    # print(p.evaluate(x=1))
+    pass

@@ -82,6 +82,8 @@ def test_create_tres_invalid_methametical_expression():
     with pytest.raises(ValueError) as e:
         p.create_tree('x/*xcos3')
     
+    with pytest.raises(ValueError) as e:
+        p.create_tree('1/x+sin')
 
 def test_create_tree_valid_inputs():
     p = Parser()
